@@ -17,6 +17,7 @@ go to `https://aistudio.google.com/apikey` and click `get API key` and then copy
   LLM : https://aistudio.google.com/app/apikey \
   RASPBERRY PI : https://datasheets.raspberrypi.com/rpizero2/raspberry-pi-zero-2-w-product-brief.pdf \
   FREECAD(for 3D modeling) : https://wiki.freecad.org/download \
+  TINKERCAD(for 3D modeling) : https://www.tinkercad.com \
   TELEGRAM : https://core.telegram.org/bots/api \
   ESP32 : https://www.alldatasheet.com/datasheet-pdf/pdf/1148023/ESPRESSIF/ESP32.html
   
