@@ -1,3 +1,4 @@
 os
 numpy
-
+python-telegram-bot
+nest_asyncio
