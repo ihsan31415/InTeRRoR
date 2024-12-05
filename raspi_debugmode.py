@@ -3,6 +3,7 @@ from telegram import Update
 from telegram.ext import Application, MessageHandler, filters, CallbackContext
 import google.generativeai as genai
 import subprocess
+import re
 
 components =  """
 these are the components and the wiring for the pinout of the components to the arduino (we ONLY have that and additional libraries are just that so dont add more lib that that): 
@@ -23,7 +24,7 @@ HCSR04:
 gy273_HMC5883L:
   - SDA: A4
   - SCL: A5
-  - Library: Adafruit_HMC5883_Unified
+  - Library: Adafruit HMC5883 Unified
 
 MPU6050:
   - SDA: A4
@@ -35,30 +36,47 @@ BUZZER:
 """
 
 genai.configure(api_key="")
-model = genai.GenerativeModel("gemini-1.5-flash")
+model = genai.GenerativeModel("gemini-exp-1121")
+
+def clean_code(text):
+    # Regex to find content between '''cpp and '''
+    match = re.search(r"```cpp(.*?)```", text, re.DOTALL)
+    
+    if match:
+        return match.group(1).strip()  # Extract the content and remove surrounding spaces
+    else:
+        return "No match found."
+
+
+
 
 def make_code(instruksi):
     instruksi = (
-        "Generate an Arduino code based on the following objective: " + instruksi +
+        "Generate an Arduino code for 2 wheeled robot based on the following objective: " + instruksi +
         " Only use the necessary components from the list below:\n\n" + components +
         "\nEnsure the code is concise, includes only required libraries, and outputs only the Arduino code without explanations."
     )
     model = genai.GenerativeModel(
-        model_name='gemini-1.5-flash',
+        model_name='gemini-exp-1121',
         system_instruction=(
-            "You are a C++ Arduino programmer. Use only the libraries and components relevant to the task specified in the instruction. "
+            "You are a C++ Arduino programmer for a 2 wheeled robot" 
+            "you will be provided with what the user want the robot do" 
+            "Use only the libraries and components relevant to the task specified in the instruction. " 
+            + components +
             "Exclude unused components, avoid comments, and output only the final code."
+            "the user might use indonesian"
         )
     )
     response = model.generate_content(instruksi)
     kode = response.text.strip()  # Remove extra whitespace
+    kode = clean_code(kode)
     return kode
 
 
 
 
-def compile_with_arduino_cli(kode):
-    """Compile the provided Arduino code using the Arduino CLI to check for errors."""
+def compile_code(kode):
+    #compile dengan arduino cli, jika eeror akan return error messege
     try:
         # Save the code to a temporary file
         with open("temp.ino", "w") as f:
@@ -75,58 +93,33 @@ def compile_with_arduino_cli(kode):
     except Exception as e:
         return False, str(e)  # Handle any exception during the process
 
-def verify_and_correct_code(kode):
-    max_attempts = 5  # Limit to prevent infinite loops
-    attempts = 0
 
+# tugas = membenarkan kode dengan input kode dan error message
+def correct_code(kode, error_message):
     model = genai.GenerativeModel(
-        model_name='gemini-1.5-flash',
+        model_name='gemini-exp-1121',
         tools='code_execution',
         system_instruction=(
-            "You are an Arduino C++ code verifier and corrector. "
-            "You will be provided with an Arduino code. Your task is to check if it is valid and compile-ready. "
-            "If it is valid, return the code unchanged. If it is invalid, correct the code and return only the corrected Arduino code, "
-            "without any explanations, comments, or additional text. Do not include any non-required libraries or components. "
-            "Only output the corrected code, nothing else."
+            "You are an Arduino C++ code corrector for a 2 wheeled robot that has "  + components +  " . "
+            "You will be provided with an Arduino code that has a compilation error. Your task is to correct and make it compile-ready. "
         )
     )
+    
+    correcting_prompt = f"""
+    The following Arduino code is invalid and failed to compile:
+    {kode}
+    error log/error messege : 
+    """
+    debug = correcting_prompt + error_message
+    response = model.generate_content(debug)
+    corrected_code = response.text.strip()
+    corrected_code = clean_code(corrected_code)
 
-    while attempts < max_attempts:
-        # Verify the code with Arduino CLI first
-        is_valid, error_message = compile_with_arduino_cli(kode)
-
-        if is_valid:
-            print("Code is valid and ready for compilation.")
-            break
-
-        # If there are compilation errors, send the code to Gemini for correction
-        print(f"Compilation failed with errors: {error_message}. Correcting the code...")
-        
-        # Send the code to Gemini for correction
-        verification_prompt = f"""
-        The following Arduino code is invalid and failed to compile:
-
-        ```cpp
-        {kode}
-        ```
-
-        Please correct it. Only output the corrected code, without any additional explanations or text.
-        """
-        
-        response = model.generate_content(verification_prompt)
-        corrected_code = response.text.strip()
-
-        # Update the code with the corrected version and try again
-        kode = corrected_code
-        attempts += 1
-
-    if attempts == max_attempts:
-        print("Maximum correction attempts reached. Please review the last corrected version.")
-
-    return kode  # Return only the final corrected code
+    return corrected_code  # Return only the final corrected code
 
 
-def upload_to_arduino(kode, port="/dev/ttyACM0"):
+def upload_to_arduino(kode):
+    port="/dev/ttyACM0"
     """Upload the provided Arduino code to the Arduino device using the Arduino CLI."""
     try:
         # Save the code to a temporary file
@@ -149,33 +142,38 @@ def upload_to_arduino(kode, port="/dev/ttyACM0"):
 # Define a function to handle text messages
 async def echo(update: Update, context: CallbackContext) -> None:
     # Get the text from the message and send it back to the user
+    #menerima teks dari user
     text_received = update.message.text
+
     await update.message.reply_text(f'{"excuting..."}')
     await update.message.reply_text(f'{"genrating code..."}')
+    
+    #gemini mulai membuat kode
     kode = make_code(text_received)
     
     await update.message.reply_text(f'{"verifying code..."}')
-
-    verif = verify_and_correct_code(kode)
-    await update.message.reply_text(f'{verif}')
-
-    
-    is_valid, compile_message = compile_with_arduino_cli(corrected_code)
-    if is_valid:
-        print("Code compiled successfully.")
-        upload_success, upload_message = upload_to_arduino(corrected_code, port)
-        if upload_success:
-            print(upload_message)  # Successful upload message
-        else:
-            print(f"Upload failed: {upload_message}")  # Error message from upload attempt
-    else:
-        print(f"Compilation failed: {compile_message}")  # Compilation error message
-
-
-
-
-
-
+    await update.message.reply_text(f'{kode}')
+    #verifikasi dengan compile ke arduino cli
+    not_uploaded = True
+    while(not_uploaded):
+        valid, error_message = compile_code(kode)
+        if valid :
+            uploaded, error_upload  = upload_to_arduino(kode)
+            if uploaded:
+                await update.message.reply_text(f'{"code uploaded!"}')
+                not_uploaded = False
+            else:
+                await update.message.reply_text(f'{"failed to upload!"}')
+                await update.message.reply_text(f'{"correcting code!"}')
+                await update.message.reply_text(f'{kode}')
+                await update.message.reply_text(f'{error_upload}')
+                kode = correct_code(kode,error_upload)
+        else :
+            await update.message.reply_text(f'{"failed to compile!"}')
+            await update.message.reply_text(f'{"correcting code!"}')
+            await update.message.reply_text(f'{kode}')
+            await update.message.reply_text(f'{error_message}')
+            kode = correct_code(kode,error_message)
 
 
 async def main():
