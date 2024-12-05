@@ -95,12 +95,12 @@ def compile_code(kode):
 
 
 # tugas = membenarkan kode dengan input kode dan error message
-def correct_code(kode, error_message):
+def correct_code(kode, error_message,instruksi):
     model = genai.GenerativeModel(
         model_name='gemini-exp-1121',
         tools='code_execution',
         system_instruction=(
-            "You are an Arduino C++ code corrector for a 2 wheeled robot that has "  + components +  " . "
+            "You are an Arduino C++ code corrector for a 2 wheeled robot that has "  + components +  " . and the objective is " + instruksi + 
             "You will be provided with an Arduino code that has a compilation error. Your task is to correct and make it compile-ready. "
         )
     )
@@ -143,13 +143,13 @@ def upload_to_arduino(kode):
 async def echo(update: Update, context: CallbackContext) -> None:
     # Get the text from the message and send it back to the user
     #menerima teks dari user
-    text_received = update.message.text
+    instruksi = update.message.text
 
     await update.message.reply_text(f'{"excuting..."}')
     await update.message.reply_text(f'{"genrating code..."}')
     
     #gemini mulai membuat kode
-    kode = make_code(text_received)
+    kode = make_code(instruksi)
     
     await update.message.reply_text(f'{"verifying code..."}')
     await update.message.reply_text(f'{kode}')
@@ -167,13 +167,13 @@ async def echo(update: Update, context: CallbackContext) -> None:
                 await update.message.reply_text(f'{"correcting code!"}')
                 await update.message.reply_text(f'{kode}')
                 await update.message.reply_text(f'{error_upload}')
-                kode = correct_code(kode,error_upload)
+                kode = correct_code(kode,error_upload, instruksi)
         else :
             await update.message.reply_text(f'{"failed to compile!"}')
             await update.message.reply_text(f'{"correcting code!"}')
             await update.message.reply_text(f'{kode}')
             await update.message.reply_text(f'{error_message}')
-            kode = correct_code(kode,error_message)
+            kode = correct_code(kode,error_message,instruksi)
 
 
 async def main():
