@@ -5,6 +5,10 @@ import google.generativeai as genai
 import subprocess
 import re
 
+#MODEL AND CREDENTIALS
+YOUR_MODEL = ''
+YOUR_API_KEY = ""
+YOUR_TELE_TOKEN = ""
 
 components =  """
 these are the components and the wiring for the pinout of the components to the arduino (we ONLY have that and additional libraries are just that so dont add more lib that that): 
@@ -36,8 +40,8 @@ BUZZER:
   - Positive: 9
 """
 
-genai.configure(api_key="AIzaSyA3Yze-aH2vB0YaqTe95Ipl5_gt2D1zBas")
-model = genai.GenerativeModel("gemini-2.0-flash-exp")
+genai.configure(api_key=YOUR_API_KEY)
+model = genai.GenerativeModel(YOUR_MODEL)
 
 def clean_code(text):
     # Regex to find content between '''cpp and '''
@@ -58,7 +62,7 @@ def make_code(instruksi):
         "\nEnsure the code is concise, includes only required libraries, and outputs only the Arduino code without explanations."
     )
     model = genai.GenerativeModel(
-        model_name='gemini-2.0-flash-exp',
+        model_name=YOUR_MODEL,
         system_instruction=(
             "You are a C++ Arduino programmer for a 2 wheeled robot" 
             "you will be provided with what the user want the robot do" 
@@ -98,7 +102,7 @@ def compile_code(kode):
 # tugas = membenarkan kode dengan input kode dan error message
 def correct_code(kode, error_message,instruksi):
     model = genai.GenerativeModel(
-        model_name='gemini-2.0-flash-exp',
+        model_name=YOUR_MODEL,
         tools='code_execution',
         system_instruction=(
             "You are an Arduino C++ code corrector for a 2 wheeled robot that has "  + components +  " . and the objective is " + instruksi + 
@@ -175,7 +179,7 @@ async def echo(update: Update, context: CallbackContext) -> None:
 
 async def main():
     # Replace 'YOUR_TOKEN' with the token you received from BotFather
-    application = Application.builder().token("7773274180:AAFRsZgmMMSGBqABId18P2sEsC9L6bCJtzQ").build()
+    application = Application.builder().token(YOUR_TELE_TOKEN).build()
 
     # Create a MessageHandler that listens for text messages
     text_handler = MessageHandler(filters.TEXT & ~filters.COMMAND, echo)
