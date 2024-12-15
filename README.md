@@ -2,7 +2,7 @@
 an llm controlled robot through live local wired (USB) C++ compilation for ESP32/Arduino 
 Project Overview
 
-InTeRRoR is an innovative project that leverages the power of Large Language Models (LLMs) to generate, compile, and upload C++ code to an Arduino-based 2-wheeled robot. The process involves using the Gemini API to generate the code based on user instructions, compiling the code locally using arduino-cli, and uploading it to the Arduino through a USB connection. This project aims to simplify the process of programming robotics by using natural language instructions to control the robot's behavior. \
+InTeRRoR is an innovative project that leverages the power of Large Language Models (LLMs) to generate, compile, and upload C++ code to an Arduino-based 2-wheeled robot. The process involves using the Gemini API to generate the code based on user instructions, compiling the code locally using arduino-cli, and uploading it to the Arduino through a USB connection. This project aims to simplify the process of programming robotics by using natural language instructions to control the robot's behavior.
 # How It Works?
 
     User Input: The user provides instructions through a Telegram bot.
@@ -12,11 +12,11 @@ InTeRRoR is an innovative project that leverages the power of Large Language Mod
     |
     V
     Code Compilation: The generated code is compiled locally using arduino-cli.
-    |
-    V
-    Code Correction: If there are any compilation errors, the code is corrected and recompiled.
-    |
-    V
+    |   |
+    |   V
+    |   Code Correction: If there are any compilation errors, the code is corrected and recompiled.
+    |   |
+    V   V
     Code Upload: Once the code is successfully compiled, it is uploaded to the Arduino via USB.
     |
     V
