@@ -61,7 +61,7 @@ Open ras.py and replace the following placeholders with your actual credentials:
         YOUR_API_KEY = <your_api_key>
         YOUR_TELE_TOKEN = <your_telegrambot_token>
 
-Run the Bo`
+Run the Bot
  
 Run the Python script to start the Telegram bot.
 
